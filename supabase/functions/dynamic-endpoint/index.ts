@@ -50,7 +50,9 @@ async function createAiReply(conversationId: string) {
 
   const { data: conversation } = await db.from("conversations")
     .select("visitor_name, language, status").eq("id", conversationId).maybeSingle();
-  if (!conversation || conversation.status === "closed") return;
+  // Once an admin replies, the conversation is handed over to a human.
+  // Do not generate any more AI replies in human or closed conversations.
+  if (!conversation || conversation.status === "closed" || conversation.status === "human") return;
 
   const { data: rows, error } = await db.from("messages")
     .select("sender, body").eq("conversation_id", conversationId)
@@ -172,7 +174,15 @@ Deno.serve(async req => {
       }).select("id,conversation_id,sender,body,language,created_at").single();
       if (error) throw error;
 
-      // Reply only to customer messages. Admin messages do not trigger another AI response.
+      // An admin reply hands this conversation over to a human.
+      // Future customer messages will no longer trigger AI replies.
+      if (sender === "agent") {
+        const { error: handoffError } = await db.from("conversations")
+          .update({ status: "human" }).eq("id", id);
+        if (handoffError) throw handoffError;
+      }
+
+      // AI replies only while the conversation is still in automatic support.
       if (sender === "customer") {
         try {
           await createAiReply(id);
