@@ -95,7 +95,7 @@ TOIMINTAOHJEET:
 - Ohjaa vaikeat, epäselvät, reklamaatioihin liittyvät ja lopullista erikoistilaushintaa vaativat asiat ylläpidolle.
 - Älä pyydä salasanoja, maksukorttitietoja tai muita arkaluonteisia tietoja.
 - Älä väitä olevasi ihminen. Jos asiakas kysyy, kerro olevasi TulosteKaupan tekoälyavustaja.
-- Jos et pysty vastaamaan asiakkaan kysymykseen varmasti tässä annettujen TulosteKaupan tietojen perusteella, älä arvaa tai keksi vastausta. Palauta tällöin täsmälleen vain tämä merkintä: [[HUMAN_HANDOFF]]
+- TÄRKEÄ IHMISASIAKASPALVELUUN OHJAAMINEN: Vastaa vain asioihin, joihin vastaus löytyy varmasti yllä olevista TulosteKaupan tiedoista tai jotka voidaan laskea niiden perusteella. Jos asiakas kysyy esimerkiksi tuotteen varastotilanteesta, tarkasta väristä/materiaalista/mitoista, tilauksen etenemisestä, toimituspäivästä, takuusta tai muusta tiedosta, jota tässä ei ole, älä arvaa äläkä kirjoita selitystä. Palauta täsmälleen ja ainoastaan [[HUMAN_HANDOFF]]. Sama koskee kaikkia epäselviä kysymyksiä. Älä koskaan vastaa "en tiedä", "voin selvittää" tai "kysy ylläpidolta" omin sanoin, vaan käytä aina merkintää [[HUMAN_HANDOFF]].
 Asiakkaan nimi: ${String(conversation.visitor_name || "Asiakas").slice(0, 80)}.`;
 
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -122,8 +122,14 @@ Asiakkaan nimi: ${String(conversation.visitor_name || "Asiakas").slice(0, 80)}.`
   const answer = String(result.choices?.[0]?.message?.content || "").trim();
   if (!answer) return;
 
-  // Replace the internal handoff marker with a customer-facing message.
-  const customerAnswer = answer.includes("[[HUMAN_HANDOFF]]")
+  // Catch both the explicit handoff marker and common uncertainty responses.
+  // This prevents the AI from leaving the customer without a human-support route
+  // if the model ignores the marker instruction.
+  const needsHuman =
+    answer.includes("[[HUMAN_HANDOFF]]") ||
+    /en (?:tiedä|pysty vahvistamaan|voi vahvistaa)|en ole varma|pitää (?:tarkistaa|varmistaa)|varmistan (?:asian|tämän)|kysy(?:ä)? ylläpidolta|ylläpito (?:voi|varmistaa|vahvistaa)|en löydä (?:tietoa|vastausta)/i.test(answer);
+
+  const customerAnswer = needsHuman
     ? "Ihminen vastaa kysymykseesi mahdollisimman nopeasti. Voit myös soittaa numeroon 045 246 5522 tai odottaa, niin vastaamme chat-viestiisi."
     : answer;
 
