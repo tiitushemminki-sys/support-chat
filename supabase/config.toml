@@ -1,0 +1,4 @@
+project_id = "wbiebposluqtucacxcuf"
+
+[functions.dynamic-endpoint]
+verify_jwt = false
