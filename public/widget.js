@@ -39,9 +39,9 @@ async function refresh(){
 function startPolling(){if(poll)clearInterval(poll);poll=setInterval(()=>refresh().catch(e=>showError(e.message)),5000);}
 function restore(){
  try{
-  const saved=JSON.parse(localStorage.getItem(storageKey)||"null");
-  if(saved&&saved.id&&saved.token){conversationId=saved.id;visitorToken=saved.token;showChat();refresh().then(startPolling).catch(()=>{localStorage.removeItem(storageKey);conversationId="";visitorToken="";$("scstart").style.display="block";$("sclog").style.display="none";$("scform").style.display="none";});}
- }catch{localStorage.removeItem(storageKey);}
+  const saved=JSON.parse(sessionStorage.getItem(storageKey)||"null");
+  if(saved&&saved.id&&saved.token){conversationId=saved.id;visitorToken=saved.token;showChat();refresh().then(startPolling).catch(()=>{sessionStorage.removeItem(storageKey);conversationId="";visitorToken="";$("scstart").style.display="block";$("sclog").style.display="none";$("scform").style.display="none";});}
+ }catch{sessionStorage.removeItem(storageKey);}
 }
 button.onclick=()=>{panel.style.display=panel.style.display==="block"?"none":"block";};
 $("scbegin").onclick=async()=>{
@@ -49,7 +49,7 @@ $("scbegin").onclick=async()=>{
  try{
   const result=await call("create_conversation",{name:$("scname").value.trim(),language:(navigator.language||"fi").slice(0,12)});
   conversationId=result.conversation.id;visitorToken=result.visitor_token;
-  localStorage.setItem(storageKey,JSON.stringify({id:conversationId,token:visitorToken}));
+  sessionStorage.setItem(storageKey,JSON.stringify({id:conversationId,token:visitorToken}));
   showChat();await refresh();startPolling();
  }catch(e){showError("Keskustelun aloitus epäonnistui: "+e.message);}
  finally{busy=false;$("scbegin").disabled=false;}
