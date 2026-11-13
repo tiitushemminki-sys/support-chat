@@ -9,8 +9,11 @@ const GROQ_MODEL = "qwen/qwen3.8-27b";
 const db = createClient(URL, SERVICE, { auth: { persistSession: false } });
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "authorization, apikey, content-type, x-client-info, x-supabase-api-version",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
+  "Vary": "Origin",
   "Content-Type": "application/json",
 };
 const out = (data: unknown, status = 200) =>
@@ -150,7 +153,9 @@ async function createAiReply(conversationId: string) {
 }
 
 Deno.serve(async req => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 200, headers: cors });
+  }
   if (req.method !== "POST") return out({ error: "Use POST" }, 405);
 
   try {
