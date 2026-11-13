@@ -14,7 +14,7 @@
 <aside class="panel"><div class="aside-heading"><h2>Keskustelut</h2><button id="refresh" class="secondary">Päivitä</button></div>
 <div class="tabs"><button id="openTab" class="tab active" type="button">Avoimet</button><button id="archiveTab" class="tab" type="button">Arkisto</button></div>
 <div id="conversations"></div><button id="logout" class="secondary logout">Kirjaudu ulos</button></aside>
-<section class="panel thread"><div class="thread-heading"><h2 id="threadTitle">Valitse keskustelu</h2><button id="closeConversation" class="archive-action hidden" type="button">Siirrä arkistoon</button></div><div id="messages" class="messages">Valitse keskustelu.</div><form id="replyForm" class="reply"><input id="replyText" placeholder="Kirjoita vastaus…" maxlength="4000" required disabled><button id="sendReply" disabled>Lähetä</button></form></section>
+<section class="panel thread"><div class="thread-heading"><h2 id="threadTitle">Valitse keskustelu</h2><div class="thread-actions"><button id="closeConversation" class="archive-action hidden" type="button">Siirrä arkistoon</button><button id="deleteConversation" class="archive-action danger hidden" type="button">Poista keskustelu</button></div></div><div id="messages" class="messages">Valitse keskustelu.</div><form id="replyForm" class="reply"><input id="replyText" placeholder="Kirjoita vastaus…" maxlength="4000" required disabled><button id="sendReply" disabled>Lähetä</button></form></section>
 </section>
 </main><script src="config.js"></script><script src="api.js"></script><script src="admin.js"></script>
 </body></html>
