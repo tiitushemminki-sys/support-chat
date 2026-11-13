@@ -183,7 +183,28 @@ Deno.serve(async req => {
         .select("id,visitor_name,language,status,created_at")
         .order("created_at", { ascending: false }).limit(100);
       if (error) throw error;
-      return out({ success: true, conversations: data });
+
+      // Include the newest message in each conversation so the admin inbox
+      // can show previews and detect incoming customer replies.
+      const ids = (data || []).map((c: any) => c.id);
+      const latestByConversation = new Map<string, any>();
+      if (ids.length) {
+        const { data: recentMessages, error: messagesError } = await db.from("messages")
+          .select("id,conversation_id,sender,body,created_at")
+          .in("conversation_id", ids)
+          .order("created_at", { ascending: false });
+        if (messagesError) throw messagesError;
+        for (const message of recentMessages || []) {
+          if (!latestByConversation.has(message.conversation_id)) {
+            latestByConversation.set(message.conversation_id, message);
+          }
+        }
+      }
+      const withLatest = (data || []).map((conversation: any) => ({
+        ...conversation,
+        latest_message: latestByConversation.get(conversation.id) || null,
+      }));
+      return out({ success: true, conversations: withLatest });
     }
 
     if (action === "list_messages") {
