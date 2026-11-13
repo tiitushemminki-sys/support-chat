@@ -1,1 +1,20 @@
-<!doctype html><html lang="fi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Asiakaspalvelu Chat</title><link rel="stylesheet" href="style.css"></head><body><main class="shell"><header><div class="logo">SC</div><div><h1>Asiakaspalvelu</h1><p>Ylläpidon viestikeskus</p></div></header><section id="login" class="panel"><h2>Ylläpitäjän kirjautuminen</h2><form id="loginForm"><label>Sähköposti<input id="email" type="email" required></label><label>Salasana<input id="password" type="password" required></label><button>Kirjaudu</button><p id="loginError" class="error"></p></form></section><section id="inbox" class="inbox hidden"><aside class="panel"><h2>Keskustelut</h2><button id="refresh" class="secondary">Päivitä</button><div id="conversations"></div><button id="logout" class="secondary">Kirjaudu ulos</button></aside><section class="panel"><h2 id="threadTitle">Valitse keskustelu</h2><div id="messages" class="messages">Valitse keskustelu.</div><form id="replyForm" class="reply"><input id="replyText" placeholder="Kirjoita vastaus…" maxlength="4000" required disabled><button id="sendReply" disabled>Lähetä</button></form></section></section></main><script src="config.js"></script><script src="api.js"></script><script src="admin.js"></script></body></html>
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#102a43">
+<title>TulosteKauppa – Ylläpito</title><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="shell">
+<header><div class="logo" aria-label="TulosteKauppa logo"><svg viewBox="0 0 64 64" role="img"><path d="M11 17 32 6l21 11v30L32 58 11 47Z" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round"/><path d="M11 17 32 29l21-12M32 29v29M21 12l22 12M21 52V32l11-6 11 6v20" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M27 37h10M27 43h10" stroke="#72e0b0" stroke-width="3" stroke-linecap="round"/></svg></div><div><h1>TulosteKauppa</h1><p>Ylläpidon viestikeskus</p></div></header>
+<div id="notice" class="notice hidden" role="status" aria-live="polite"></div>
+<section id="login" class="panel"><h2>Ylläpitäjän kirjautuminen</h2><form id="loginForm"><label>Sähköposti<input id="email" type="email" required autocomplete="username"></label><label>Salasana<input id="password" type="password" required autocomplete="current-password"></label><button>Kirjaudu</button><p id="loginError" class="error"></p></form></section>
+<section id="inbox" class="inbox hidden">
+<aside class="panel"><div class="aside-heading"><h2>Keskustelut</h2><button id="refresh" class="secondary">Päivitä</button></div>
+<div class="tabs"><button id="openTab" class="tab active" type="button">Avoimet</button><button id="archiveTab" class="tab" type="button">Arkisto</button></div>
+<div id="conversations"></div><button id="logout" class="secondary logout">Kirjaudu ulos</button></aside>
+<section class="panel thread"><div class="thread-heading"><h2 id="threadTitle">Valitse keskustelu</h2><button id="closeConversation" class="archive-action hidden" type="button">Siirrä arkistoon</button></div><div id="messages" class="messages">Valitse keskustelu.</div><form id="replyForm" class="reply"><input id="replyText" placeholder="Kirjoita vastaus…" maxlength="4000" required disabled><button id="sendReply" disabled>Lähetä</button></form></section>
+</section>
+</main><script src="config.js"></script><script src="api.js"></script><script src="admin.js"></script>
+</body></html>
