@@ -219,6 +219,18 @@ Deno.serve(async req => {
       return out({ success: true, messages: data });
     }
 
+    if (action === "delete_conversation") {
+      if (!isAdmin) return out({ error: "Ylläpitäjän kirjautuminen vaaditaan" }, 401);
+      const id = String(x.conversation_id || "");
+      if (!id) return out({ error: "Keskustelun tunniste puuttuu" }, 400);
+      // Delete messages first, then the conversation. Only admins can do this.
+      const { error: messagesError } = await db.from("messages").delete().eq("conversation_id", id);
+      if (messagesError) throw messagesError;
+      const { error: conversationError } = await db.from("conversations").delete().eq("id", id);
+      if (conversationError) throw conversationError;
+      return out({ success: true });
+    }
+
     if (action === "close_conversation") {
       if (!isAdmin) return out({ error: "Ylläpitäjän kirjautuminen vaaditaan" }, 401);
       const { error } = await db.from("conversations")
