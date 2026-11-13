@@ -64,7 +64,7 @@ async function createAiReply(conversationId: string) {
     content: String(m.body).slice(0, 3000),
   }));
 
-  const systemPrompt = `Olet TulosteKaupan ystävällinen asiakaspalvelija. Vastaa asiakkaalle aina samalla kielellä, jolla hän kirjoittaa. Jos asiakas kirjoittaa suomeksi, vastaa suomeksi. Pidä vastaukset selkeinä, ystävällisinä ja melko lyhyinä.
+  const systemPrompt = `Olet TulosteKaupan ystävällinen asiakaspalvelija. Vastaa asiakkaalle aina samalla kielellä, jolla hän kirjoittaa. Tunnista asiakkaan käyttämä kieli automaattisesti ja vastaa sillä kielellä, vaikka se olisi mikä tahansa kieli. Tämä koskee myös harvinaisempia kieliä. Älä vaihda kieltä kesken keskustelun, ellei asiakas itse vaihda kieltä. Jos asiakas kirjoittaa suomeksi, vastaa suomeksi. Pidä vastaukset selkeinä, ystävällisinä ja melko lyhyinä.
 
 TULOSTEKAUPAN TUOTTEET JA HINNAT:
 - Puhelinteline, säädettävä kulma: 8 €.
@@ -129,9 +129,48 @@ Asiakkaan nimi: ${String(conversation.visitor_name || "Asiakas").slice(0, 80)}.`
     answer.includes("[[HUMAN_HANDOFF]]") ||
     /en (?:tiedä|pysty vahvistamaan|voi vahvistaa)|en ole varma|pitää (?:tarkistaa|varmistaa)|varmistan (?:asian|tämän)|kysy(?:ä)? ylläpidolta|ylläpito (?:voi|varmistaa|vahvistaa)|en löydä (?:tietoa|vastausta)/i.test(answer);
 
-  const customerAnswer = needsHuman
-    ? "Ihminen vastaa kysymykseesi mahdollisimman nopeasti. Voit myös soittaa numeroon 045 246 5522 tai odottaa, niin vastaamme chat-viestiisi."
-    : answer;
+  let customerAnswer = answer;
+  if (needsHuman) {
+    const handoffFinnish = "Ihminen vastaa kysymykseesi mahdollisimman nopeasti. Voit myös soittaa numeroon 045 246 5522 tai odottaa, niin vastaamme chat-viestiisi.";
+    // Translate the handoff notice into the language used in the customer's latest message.
+    const latestCustomerMessage = [...history].reverse().find(m => m.role === "user")?.content || "";
+    try {
+      const translationResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: GROQ_MODEL,
+          messages: [
+            {
+              role: "system",
+              content: "You are a professional translator. Detect the language of the customer's message and translate the provided Finnish customer-service notice into that exact language. Preserve the phone number exactly. Output only the translated notice, with no explanation or quotation marks. If the message is too short to identify a language, use the conversation language if clear; otherwise use English.",
+            },
+            {
+              role: "user",
+              content: `Customer's message (detect language from this): ${latestCustomerMessage.slice(0, 1000)}\n\nTranslate this notice: ${handoffFinnish}`,
+            },
+          ],
+          temperature: 0,
+          max_tokens: 180,
+        }),
+      });
+      if (translationResponse.ok) {
+        const translationResult = await translationResponse.json();
+        const translated = String(translationResult.choices?.[0]?.message?.content || "").trim();
+        if (translated) customerAnswer = translated;
+        else customerAnswer = handoffFinnish;
+      } else {
+        console.error("Handoff translation failed:", translationResponse.status);
+        customerAnswer = handoffFinnish;
+      }
+    } catch (translationError) {
+      console.error("Handoff translation error:", translationError);
+      customerAnswer = handoffFinnish;
+    }
+  }
 
   const { error: insertError } = await db.from("messages").insert({
     conversation_id: conversationId,
