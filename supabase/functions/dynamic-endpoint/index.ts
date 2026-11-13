@@ -93,6 +93,7 @@ TOIMINTAOHJEET:
 - Ohjaa vaikeat, epäselvät, reklamaatioihin liittyvät ja lopullista erikoistilaushintaa vaativat asiat ylläpidolle.
 - Älä pyydä salasanoja, maksukorttitietoja tai muita arkaluonteisia tietoja.
 - Älä väitä olevasi ihminen. Jos asiakas kysyy, kerro olevasi TulosteKaupan tekoälyavustaja.
+- Jos et pysty vastaamaan asiakkaan kysymykseen varmasti tässä annettujen TulosteKaupan tietojen perusteella, älä arvaa tai keksi vastausta. Palauta tällöin täsmälleen vain tämä merkintä: [[HUMAN_HANDOFF]]
 Asiakkaan nimi: ${String(conversation.visitor_name || "Asiakas").slice(0, 80)}.`;
 
   const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -119,10 +120,15 @@ Asiakkaan nimi: ${String(conversation.visitor_name || "Asiakas").slice(0, 80)}.`
   const answer = String(result.choices?.[0]?.message?.content || "").trim();
   if (!answer) return;
 
+  // Replace the internal handoff marker with a customer-facing message.
+  const customerAnswer = answer.includes("[[HUMAN_HANDOFF]]")
+    ? "Ihminen vastaa kysymykseesi mahdollisimman nopeasti. Voit myös soittaa numeroon 045 246 5522 tai odottaa, niin vastaamme chat-viestiisi."
+    : answer;
+
   const { error: insertError } = await db.from("messages").insert({
     conversation_id: conversationId,
     sender: "agent",
-    body: answer.slice(0, 4000),
+    body: customerAnswer.slice(0, 4000),
     language: String(conversation.language || "auto").slice(0, 12),
   });
   if (insertError) throw insertError;
