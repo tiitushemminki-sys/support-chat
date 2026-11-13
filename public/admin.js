@@ -59,14 +59,25 @@ function renderList(){
   b.onclick=()=>select(c);root.append(b);
  });
 }
-function showEmpty(){$("threadTitle").textContent="Valitse keskustelu";$("messages").textContent="Valitse keskustelu.";$("replyText").disabled=true;$("sendReply").disabled=true;$("closeConversation").classList.add("hidden");}
-async function select(c){selected=c.id;$("threadTitle").textContent=c.visitor_name||"Asiakas";const archived=c.status==="closed";$("replyText").disabled=archived;$("sendReply").disabled=archived;$("closeConversation").classList.toggle("hidden",archived);$("closeConversation").textContent="Siirrä arkistoon";renderList();try{await messages();}catch(e){notice("Viestien lataus epäonnistui: "+e.message,"error");}}
+function showEmpty(){$("threadTitle").textContent="Valitse keskustelu";$("messages").textContent="Valitse keskustelu.";$("replyText").disabled=true;$("sendReply").disabled=true;$("closeConversation").classList.add("hidden");$("deleteConversation").classList.add("hidden");}
+async function select(c){selected=c.id;$("threadTitle").textContent=c.visitor_name||"Asiakas";const archived=c.status==="closed";$("replyText").disabled=archived;$("sendReply").disabled=archived;$("closeConversation").classList.toggle("hidden",archived);$("deleteConversation").classList.remove("hidden");$("closeConversation").textContent="Siirrä arkistoon";renderList();try{await messages();}catch(e){notice("Viestien lataus epäonnistui: "+e.message,"error");}}
 async function messages(){if(!selected)return;const d=await SupportChatAPI.call("list_messages",{conversation_id:selected},jwt);const root=$("messages");root.innerHTML="";(d.messages||[]).forEach(m=>{const box=document.createElement("div");box.className="message "+m.sender;const p=document.createElement("p");p.textContent=m.body;box.append(p);root.append(box)});root.scrollTop=root.scrollHeight;}
 $("loginForm").onsubmit=async e=>{e.preventDefault();try{const d=await SupportChatAPI.login($("email").value,$("password").value);jwt=d.access_token;firstLoad=true;knownIds.clear();await load();$("login").classList.add("hidden");$("inbox").classList.remove("hidden");if(timer)clearInterval(timer);timer=setInterval(()=>load(),8000);}catch(e){$("loginError").textContent=e.message;}};
 $("refresh").onclick=()=>load();
 $("openTab").onclick=async()=>{activeTab="open";$("openTab").classList.add("active");$("archiveTab").classList.remove("active");if(selected&&conversations.find(c=>c.id===selected)?.status==="closed"){selected="";showEmpty();}await load();renderList();};
 $("archiveTab").onclick=async()=>{activeTab="archive";$("archiveTab").classList.add("active");$("openTab").classList.remove("active");if(selected&&conversations.find(c=>c.id===selected)?.status!=="closed"){selected="";showEmpty();}await load();renderList();};
 $("closeConversation").onclick=async()=>{if(!selected)return;try{await SupportChatAPI.call("close_conversation",{conversation_id:selected},jwt);const c=conversations.find(x=>x.id===selected);if(c)c.status="closed";selected="";showEmpty();renderList();notice("Keskustelu siirretty arkistoon.");}catch(e){notice("Arkistointi epäonnistui: "+e.message,"error");}};
+$("deleteConversation").onclick=async()=>{
+ if(!selected)return;
+ if(!confirm("Poistetaanko tämä keskustelu ja kaikki sen viestit pysyvästi? Tätä ei voi perua."))return;
+ const id=selected;
+ try{
+  await SupportChatAPI.call("delete_conversation",{conversation_id:id},jwt);
+  conversations=conversations.filter(c=>c.id!==id);
+  knownIds.delete(id);knownMessageIds.delete(id);selected="";showEmpty();renderList();
+  notice("Keskustelu ja sen viestit poistettu.");
+ }catch(e){notice("Poistaminen epäonnistui: "+e.message,"error");}
+};
 $("replyForm").onsubmit=async e=>{e.preventDefault();const body=$("replyText").value.trim();if(!body||!selected)return;try{await SupportChatAPI.call("send_message",{conversation_id:selected,body,sender:"agent",language:"fi"},jwt);$("replyText").value="";await messages();}catch(e){notice("Viestin lähetys epäonnistui: "+e.message,"error");}};
 $("logout").onclick=()=>{if(timer)clearInterval(timer);timer=null;jwt="";selected="";conversations=[];knownIds.clear();knownMessageIds.clear();firstLoad=true;$("inbox").classList.add("hidden");$("login").classList.remove("hidden");$("notice").classList.add("hidden");};
 })();
