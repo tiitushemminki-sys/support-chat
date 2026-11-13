@@ -25,10 +25,7 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (::web.isInitialized && web.canGoBack()) {
-            web.goBack()
-        } else {
-            super.onBackPressed()
-        }
+        if (::web.isInitialized && web.canGoBack()) web.goBack()
+        else super.onBackPressed()
     }
 }
