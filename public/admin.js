@@ -1,6 +1,6 @@
 (()=> {
 const $=id=>document.getElementById(id);
-let jwt="",selected="",timer=null,activeTab="open",knownIds=new Set(),firstLoad=true,conversations=[],loading=false;
+let jwt="",selected="",timer=null,activeTab="open",knownIds=new Set(),knownMessageIds=new Map(),firstLoad=true,conversations=[],loading=false;
 function notice(message,kind="info"){
  const n=$("notice");n.textContent=message;n.classList.remove("hidden","show","error-notice");if(kind==="error")n.classList.add("error-notice");void n.offsetWidth;n.classList.add("show");
 }
@@ -17,9 +17,24 @@ async function load(){
   const d=await SupportChatAPI.call("list_conversations",{},jwt);
   conversations=d.conversations||[];
   const fresh=conversations.filter(c=>!knownIds.has(c.id)&&c.status!=="closed");
-  if(firstLoad){conversations.forEach(c=>knownIds.add(c.id));firstLoad=false;}
-  else if(fresh.length){conversations.forEach(c=>knownIds.add(c.id));notifyNew(fresh);}
-  else conversations.forEach(c=>knownIds.add(c.id));
+  const incoming=[];
+  if(firstLoad){
+   conversations.forEach(c=>{knownIds.add(c.id);if(c.latest_message)knownMessageIds.set(c.id,c.latest_message.id);});
+   firstLoad=false;
+  }else{
+   conversations.forEach(c=>{
+    knownIds.add(c.id);
+    const latest=c.latest_message;
+    const previous=knownMessageIds.get(c.id);
+    if(latest){
+     if(previous&&previous!==latest.id&&latest.sender==="customer"&&!fresh.some(n=>n.id===c.id))incoming.push(c);
+     knownMessageIds.set(c.id,latest.id);
+    }
+   });
+   if(fresh.length)notifyNew(fresh);
+   if(incoming.length)notice(incoming.length===1?"Uusi viesti: "+(incoming[0].visitor_name||"Asiakas"):"Uusia viestejä "+incoming.length+" keskustelussa");
+   if(incoming.length&&"vibrate" in navigator)navigator.vibrate([100,50,100]);
+  }
   renderList();
   if(selected){
    const current=conversations.find(c=>c.id===selected);
@@ -39,7 +54,9 @@ function renderList(){
   const b=document.createElement("button");b.className="conversation"+(selected===c.id?" selected":"");b.type="button";
   const t=document.createElement("strong");t.textContent=c.visitor_name||"Asiakas";
   const s=document.createElement("small");s.textContent=`${c.language||"fi"} · ${c.status==="closed"?"Arkistoitu":"Avoin"}`;
-  b.append(t,s);b.onclick=()=>select(c);root.append(b);
+  b.append(t,s);
+  if(c.latest_message){const preview=document.createElement("small");preview.className="muted";preview.textContent=(c.latest_message.sender==="customer"?"Asiakas: ":"Sinä: ")+String(c.latest_message.body||"").slice(0,90);b.append(preview);}
+  b.onclick=()=>select(c);root.append(b);
  });
 }
 function showEmpty(){$("threadTitle").textContent="Valitse keskustelu";$("messages").textContent="Valitse keskustelu.";$("replyText").disabled=true;$("sendReply").disabled=true;$("closeConversation").classList.add("hidden");}
@@ -51,5 +68,5 @@ $("openTab").onclick=async()=>{activeTab="open";$("openTab").classList.add("acti
 $("archiveTab").onclick=async()=>{activeTab="archive";$("archiveTab").classList.add("active");$("openTab").classList.remove("active");if(selected&&conversations.find(c=>c.id===selected)?.status!=="closed"){selected="";showEmpty();}await load();renderList();};
 $("closeConversation").onclick=async()=>{if(!selected)return;try{await SupportChatAPI.call("close_conversation",{conversation_id:selected},jwt);const c=conversations.find(x=>x.id===selected);if(c)c.status="closed";selected="";showEmpty();renderList();notice("Keskustelu siirretty arkistoon.");}catch(e){notice("Arkistointi epäonnistui: "+e.message,"error");}};
 $("replyForm").onsubmit=async e=>{e.preventDefault();const body=$("replyText").value.trim();if(!body||!selected)return;try{await SupportChatAPI.call("send_message",{conversation_id:selected,body,sender:"agent",language:"fi"},jwt);$("replyText").value="";await messages();}catch(e){notice("Viestin lähetys epäonnistui: "+e.message,"error");}};
-$("logout").onclick=()=>{if(timer)clearInterval(timer);timer=null;jwt="";selected="";conversations=[];knownIds.clear();firstLoad=true;$("inbox").classList.add("hidden");$("login").classList.remove("hidden");$("notice").classList.add("hidden");};
+$("logout").onclick=()=>{if(timer)clearInterval(timer);timer=null;jwt="";selected="";conversations=[];knownIds.clear();knownMessageIds.clear();firstLoad=true;$("inbox").classList.add("hidden");$("login").classList.remove("hidden");$("notice").classList.add("hidden");};
 })();
