@@ -12,6 +12,6 @@ update auth.users set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::json
 4. Deploy `supabase/functions/dynamic-endpoint/index.ts` as `dynamic-endpoint`.
 5. Edit `public/config.js` with your project URL and publishable key. These are public values.
 6. Deploy the `public` folder to a static host. Open `/admin.html` for the inbox.
-7. For Android, edit `ADMIN_URL` in `android/app/src/main/java/com/supportchat/app/MainActivity.kt`, open the `android` folder in Android Studio, then Build > Build APK(s).
+7. Build the Android APK from GitHub Actions: open Actions, select “Build Android APK”, run workflow, then download the `TulosteKauppa-Yllapito-APK` artifact from the completed run. Install the downloaded APK on your Android phone. The app opens the live admin inbox at `https://support-chat-d1ev.onrender.com/admin.html`.
 
 Test with dummy conversations before using with customers. RLS stays enabled; all database access is through the Edge Function.
