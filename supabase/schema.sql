@@ -23,31 +23,5 @@ revoke all on public.conversations from anon, authenticated;
 revoke all on public.messages from anon, authenticated;
 do $$ begin alter publication supabase_realtime add table public.messages; exception when duplicate_object then null; when duplicate_table then null; end $$;
 
--- Automatically archive open conversations 15 minutes after creation.
-create extension if not exists pg_cron with schema extensions;
-
-create or replace function public.archive_expired_support_conversations()
-returns void
-language sql
-security definer
-set search_path = public
-as $$
-  update public.conversations
-  set status = 'closed'
-  where status = 'open'
-    and created_at <= now() - interval '15 minutes';
-$$;
-
-do $$
-begin
-  if not exists (
-    select 1 from cron.job where jobname = 'archive-support-chats-every-minute'
-  ) then
-    perform cron.schedule(
-      'archive-support-chats-every-minute',
-      '* * * * *',
-      'select public.archive_expired_support_conversations();'
-    );
-  end if;
-end
-$$;
+-- Conversations are kept open until an administrator archives them.
+-- Do not automatically archive chats: this previously hid active customer conversations after 15 minutes.
